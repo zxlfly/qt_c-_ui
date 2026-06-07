@@ -18,6 +18,10 @@ qt_add_executable(ui
     flowtemplates.cpp
     flowdemopage.h
     flowdemopage.cpp
+    circledisplaywidget.h
+    circledisplaywidget.cpp
+    circledemopage.h
+    circledemopage.cpp
 )
 
 target_link_libraries(ui

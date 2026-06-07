@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "flowdemopage.h"
+#include "circledemopage.h"
 #include <QHBoxLayout>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -47,6 +48,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // 注册页面
     addPage("流程状态展示", new FlowDemoPage());
+    addPage("环形管展示",   new CircleDemoPage());
     // 后续添加新页面：
     // addPage("新功能名称", new NewDemoPage());
 
