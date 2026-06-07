@@ -192,6 +192,13 @@ void updateNodeText(const QString &id, const QString &text);
 const FlowData &flowData() const;
 ```
 
+### 箭头控制
+
+```cpp
+void setArrowVisible(bool visible);  // true=绘制箭头（默认），false=不绘制
+bool arrowVisible() const;           // 查询当前状态
+```
+
 ---
 
 ## 坐标系统

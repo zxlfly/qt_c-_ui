@@ -23,11 +23,16 @@ public:
     // 获取当前数据
     const FlowData &flowData() const;
 
+    // 箭头控制
+    void setArrowVisible(bool visible);
+    bool arrowVisible() const;
+
 protected:
     void paintEvent(QPaintEvent *event) override;
 
 private:
     FlowData m_data;
+    bool m_arrowVisible = true;  // 是否绘制箭头
 
     // 绘制各层
     void drawBranches(QPainter &painter);

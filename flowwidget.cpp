@@ -58,6 +58,17 @@ void FlowWidget::updateBranchState(const QString &id, EdgeState state)
     }
 }
 
+void FlowWidget::setArrowVisible(bool visible)
+{
+    m_arrowVisible = visible;
+    update();
+}
+
+bool FlowWidget::arrowVisible() const
+{
+    return m_arrowVisible;
+}
+
 const FlowData &FlowWidget::flowData() const
 {
     return m_data;
@@ -143,7 +154,8 @@ void FlowWidget::drawBranches(QPainter &painter)
                 painter.drawLine(QPointF(colX, t.pixelY), hEnd);
 
                 // 箭头
-                drawArrow(painter, hEnd, QPointF(colX, t.pixelY));
+                if (m_arrowVisible)
+                    drawArrow(painter, hEnd, QPointF(colX, t.pixelY));
             }
         } else {
             // Merge: branches → stem
@@ -164,7 +176,8 @@ void FlowWidget::drawBranches(QPainter &painter)
             painter.drawLine(QPointF(colX, stemPx.y()), hEnd);
 
             // 箭头
-            drawArrow(painter, hEnd, QPointF(colX, stemPx.y()));
+            if (m_arrowVisible)
+                drawArrow(painter, hEnd, QPointF(colX, stemPx.y()));
         }
     }
 }
@@ -220,7 +233,8 @@ void FlowWidget::drawEdges(QPainter &painter)
         painter.drawLine(fromEdge, toEdge);
 
         // 画箭头
-        drawArrow(painter, toEdge, fromEdge);
+        if (m_arrowVisible)
+            drawArrow(painter, toEdge, fromEdge);
     }
 }
 
