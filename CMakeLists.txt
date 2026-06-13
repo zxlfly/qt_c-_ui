@@ -24,6 +24,8 @@ qt_add_executable(ui
     circledemopage.cpp
     circleselectdemopage.h
     circleselectdemopage.cpp
+    circlerotatedemopage.h
+    circlerotatedemopage.cpp
 )
 
 target_link_libraries(ui

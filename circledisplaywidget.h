@@ -7,6 +7,7 @@
 class CircleDisplayWidget : public QWidget
 {
     Q_OBJECT
+    Q_PROPERTY(double rotationOffset READ rotationOffset WRITE setRotationOffset NOTIFY rotationOffsetChanged)
 
 public:
     explicit CircleDisplayWidget(QWidget *parent = nullptr);
@@ -37,12 +38,22 @@ public:
     void setSelectEnabled(bool enabled);
     bool selectEnabled() const;
 
+    // 旋转偏移（度数），大管+小管整体旋转，倒三角位置不变
+    void setRotationOffset(double degrees);
+    double rotationOffset() const;
+
     // 获取某个小圆的中心像素坐标（用于弹出菜单定位）
     QPointF itemCenter(int index) const;
+
+    // 获取某个小管的文字
+    QString itemText(int index) const;
 
 signals:
     // 点击了第 index 个小圆（0~11），-1 表示没点中任何小圆
     void itemClicked(int index);
+
+    // 旋转偏移变化
+    void rotationOffsetChanged(double degrees);
 
 protected:
     void paintEvent(QPaintEvent *) override;
@@ -66,6 +77,7 @@ private:
     QVector<ItemData> m_items;     // 12个
     bool m_handleVisible = true;   // 是否绘制顶部倒三角形
     bool m_selectEnabled = false;  // 是否开启点击选择（默认关闭）
+    double m_rotationOffset = 0.0; // 旋转偏移角度（度数）
     QColor m_outerBorderColor = QColor("#424242");
     QColor m_innerBorderColor = QColor("#424242");
     QColor m_textColor = QColor("#424242");

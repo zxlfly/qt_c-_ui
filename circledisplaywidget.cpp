@@ -79,6 +79,19 @@ bool CircleDisplayWidget::selectEnabled() const
     return m_selectEnabled;
 }
 
+void CircleDisplayWidget::setRotationOffset(double degrees)
+{
+    if (qFuzzyCompare(m_rotationOffset, degrees)) return;
+    m_rotationOffset = degrees;
+    update();
+    emit rotationOffsetChanged(degrees);
+}
+
+double CircleDisplayWidget::rotationOffset() const
+{
+    return m_rotationOffset;
+}
+
 // --- 绘制 ---
 
 void CircleDisplayWidget::paintEvent(QPaintEvent *)
@@ -129,7 +142,7 @@ int CircleDisplayWidget::hitTest(const QPointF &pos) const
     Layout layout  = computeLayout(outerR);
 
     for (int i = 0; i < 12; ++i) {
-        double angleDeg = 270.0 + i * 30.0;
+        double angleDeg = 270.0 + i * 30.0 + m_rotationOffset;
         double angleRad = qDegreesToRadians(angleDeg);
         double innerR = (i % 2 == 0) ? layout.farR : layout.nearR;
 
@@ -155,12 +168,18 @@ QPointF CircleDisplayWidget::itemCenter(int index) const
     double outerR  = minSide / 2.0 * 0.90;
     Layout layout  = computeLayout(outerR);
 
-    double angleDeg = 270.0 + index * 30.0;
+    double angleDeg = 270.0 + index * 30.0 + m_rotationOffset;
     double angleRad = qDegreesToRadians(angleDeg);
     double innerR = (index % 2 == 0) ? layout.farR : layout.nearR;
 
     return QPointF(centerPt.x() + innerR * qCos(angleRad),
                    centerPt.y() + innerR * qSin(angleRad));
+}
+
+QString CircleDisplayWidget::itemText(int index) const
+{
+    if (index < 0 || index >= 12) return QString();
+    return m_items[index].text;
 }
 
 void CircleDisplayWidget::mousePressEvent(QMouseEvent *event)
@@ -232,7 +251,7 @@ void CircleDisplayWidget::drawConnectingArcs(QPainter &painter, const QPointF &c
     // 计算所有小圆圆心
     QVector<QPointF> centers(12);
     for (int i = 0; i < 12; ++i) {
-        double angleDeg = 270.0 + i * 30.0;
+        double angleDeg = 270.0 + i * 30.0 + m_rotationOffset;
         double angleRad = qDegreesToRadians(angleDeg);
         double innerR = (i % 2 == 0) ? farR : nearR;
         centers[i] = QPointF(center.x() + innerR * qCos(angleRad),
@@ -306,8 +325,8 @@ void CircleDisplayWidget::drawItems(QPainter &painter, const QPointF &center, co
     labelFont.setPointSizeF(qMax(7.0, smallR * 0.30));
 
     for (int i = 0; i < 12; ++i) {
-        // 角度：从12点方向(270°)开始顺时针，每30°一个
-        double angleDeg = 270.0 + i * 30.0;
+        // 角度：从12点方向(270°)开始顺时针，每30°一个，加上旋转偏移
+        double angleDeg = 270.0 + i * 30.0 + m_rotationOffset;
         double angleRad = qDegreesToRadians(angleDeg);
 
         // 交替远近：偶数索引远，奇数索引近
