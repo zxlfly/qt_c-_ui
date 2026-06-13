@@ -33,9 +33,21 @@ public:
     void setHandleVisible(bool visible);
     bool handleVisible() const;
 
+    // 控制是否开启点击选择功能（关闭后点击小圆不发射 itemClicked 信号）
+    void setSelectEnabled(bool enabled);
+    bool selectEnabled() const;
+
+    // 获取某个小圆的中心像素坐标（用于弹出菜单定位）
+    QPointF itemCenter(int index) const;
+
+signals:
+    // 点击了第 index 个小圆（0~11），-1 表示没点中任何小圆
+    void itemClicked(int index);
+
 protected:
     void paintEvent(QPaintEvent *) override;
     void resizeEvent(QResizeEvent *) override;
+    void mousePressEvent(QMouseEvent *event) override;
 
 private:
     struct ItemData {
@@ -53,6 +65,7 @@ private:
 
     QVector<ItemData> m_items;     // 12个
     bool m_handleVisible = true;   // 是否绘制顶部倒三角形
+    bool m_selectEnabled = false;  // 是否开启点击选择（默认关闭）
     QColor m_outerBorderColor = QColor("#424242");
     QColor m_innerBorderColor = QColor("#424242");
     QColor m_textColor = QColor("#424242");
@@ -67,6 +80,9 @@ private:
     // 约束1：远圆与大圆内切 → farR + smallR = outerR
     // 约束2：相邻小圆外切 → 圆心距 = 2 * smallR
     Layout computeLayout(double outerR) const;
+
+    // 命中测试：给定像素坐标，返回点中的小圆索引（-1=无）
+    int hitTest(const QPointF &pos) const;
 };
 
 #endif // CIRCLEDISPLAYWIDGET_H

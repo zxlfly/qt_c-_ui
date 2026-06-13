@@ -46,6 +46,8 @@ widget->setItemFillColor(0, QColor("#E8F5E9"));
 | `setTextColor(const QColor &color)` | 小圆内部文字颜色（默认 `#424242`） |
 | `setHandleVisible(bool visible)` | 是否绘制顶部倒三角形（默认 `true`） |
 | `handleVisible() const` | 查询倒三角形是否可见 |
+| `setSelectEnabled(bool enabled)` | 是否开启点击选择功能（默认 `false`，开启后点击小圆发射 `itemClicked` 信号） |
+| `selectEnabled() const` | 查询点击选择是否开启 |
 
 ---
 
@@ -121,6 +123,82 @@ bool   tangentToOuter = true;    // true=远圆内切大圆，false=仅相邻小
 4. **小圆** — 填充 + 边框，覆盖弧线端点
 5. **编号标签** — 远圆内侧，近圆外侧
 
+### 信号
+
+| 信号 | 说明 |
+|------|------|
+| `itemClicked(int index)` | 点击了第 index 个小圆（0~11），需 `setSelectEnabled(true)` 后才会发射；点空白返回 -1 |
+
+### 辅助方法
+
+| 方法 | 说明 |
+|------|------|
+| `itemCenter(int index) const` | 获取第 index 个小圆的中心像素坐标，可用于弹出菜单定位 |
+
+---
+
+## 点击选择功能
+
+`CircleDisplayWidget` 内置了点击选择能力，通过 `setSelectEnabled()` 控制开关。
+
+### 基本用法
+
+```cpp
+// 1. 创建控件
+CircleDisplayWidget *widget = new CircleDisplayWidget(this);
+layout->addWidget(widget);
+
+// 2. 开启点击选择（默认关闭）
+widget->setSelectEnabled(true);
+
+// 3. 监听点击信号
+connect(widget, &CircleDisplayWidget::itemClicked, this, [widget](int index) {
+    if (index >= 0) {
+        qDebug() << "点击了" << index << "号管，当前文字：" << ...;
+    }
+});
+```
+
+### 配合弹出列表选择
+
+`CircleSelectDemoPage` 演示了点击小管 → 弹出选项列表 → 选择后更新管内文字的完整交互：
+
+```cpp
+#include "circledisplaywidget.h"
+#include <QListWidget>
+#include <QFrame>
+
+// 1. 创建控件并开启选择
+CircleDisplayWidget *circle = new CircleDisplayWidget(this);
+circle->setSelectEnabled(true);
+
+// 2. 创建弹出列表
+QFrame *popup = new QFrame(this);
+QListWidget *listWidget = new QListWidget(popup);
+listWidget->addItems({"选项A", "选项B", "选项C"});
+popup->hide();
+
+// 3. 点击小管 → 定位弹出列表
+connect(circle, &CircleDisplayWidget::itemClicked, this, [this, circle, popup](int index) {
+    if (index < 0) { popup->hide(); return; }
+
+    // 获取小圆中心坐标并定位弹出框
+    QPointF center = circle->itemCenter(index);
+    QPoint pos = circle->mapToParent(center.toPoint());
+    pos += QPoint(30, -popup->height() / 2);
+    popup->move(pos);
+    popup->show();
+    popup->raise();
+});
+
+// 4. 选择列表项 → 更新小管文字
+connect(listWidget, &QListWidget::itemClicked, this, [circle, popup](QListWidgetItem *item) {
+    int idx = /* 保存的当前索引 */;
+    circle->setItemText(idx, item->text());
+    popup->hide();
+});
+```
+
 ---
 
 ## 完整示例
@@ -150,6 +228,14 @@ widget->setItemText(9, "废液!");
 
 // 改边框颜色
 widget->setInnerBorderColor(QColor("#1976D2"));  // 蓝色系
+
+// 开启点击选择
+widget->setSelectEnabled(true);
+connect(widget, &CircleDisplayWidget::itemClicked, this, [widget](int index) {
+    if (index >= 0) {
+        widget->setItemText(index, "已选中");
+    }
+});
 ```
 
 ---
@@ -167,3 +253,4 @@ widget->setInnerBorderColor(QColor("#1976D2"));  // 蓝色系
 | `circledisplaywidget.h` | 类声明 |
 | `circledisplaywidget.cpp` | 绘制实现 |
 | `circledemopage.h/cpp` | 演示页面（随机更新、重置按钮） |
+| `circleselectdemopage.h/cpp` | 点击选择演示页面（弹出列表选择后更新管内文字） |

@@ -4,6 +4,7 @@
 #include <QFontMetrics>
 #include <QtMath>
 #include <QPainterPath>
+#include <QMouseEvent>
 
 CircleDisplayWidget::CircleDisplayWidget(QWidget *parent)
     : QWidget(parent)
@@ -68,6 +69,16 @@ bool CircleDisplayWidget::handleVisible() const
     return m_handleVisible;
 }
 
+void CircleDisplayWidget::setSelectEnabled(bool enabled)
+{
+    m_selectEnabled = enabled;
+}
+
+bool CircleDisplayWidget::selectEnabled() const
+{
+    return m_selectEnabled;
+}
+
 // --- 绘制 ---
 
 void CircleDisplayWidget::paintEvent(QPaintEvent *)
@@ -106,6 +117,59 @@ void CircleDisplayWidget::paintEvent(QPaintEvent *)
 void CircleDisplayWidget::resizeEvent(QResizeEvent *)
 {
     update();
+}
+
+// --- 命中测试 ---
+
+int CircleDisplayWidget::hitTest(const QPointF &pos) const
+{
+    QPointF center(width() / 2.0, height() / 2.0);
+    double minSide = qMin(width(), height());
+    double outerR  = minSide / 2.0 * 0.90;
+    Layout layout  = computeLayout(outerR);
+
+    for (int i = 0; i < 12; ++i) {
+        double angleDeg = 270.0 + i * 30.0;
+        double angleRad = qDegreesToRadians(angleDeg);
+        double innerR = (i % 2 == 0) ? layout.farR : layout.nearR;
+
+        double cx = center.x() + innerR * qCos(angleRad);
+        double cy = center.y() + innerR * qSin(angleRad);
+        QPointF itemCenter(cx, cy);
+
+        double dx = pos.x() - itemCenter.x();
+        double dy = pos.y() - itemCenter.y();
+        if (dx * dx + dy * dy <= layout.smallR * layout.smallR) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+QPointF CircleDisplayWidget::itemCenter(int index) const
+{
+    if (index < 0 || index >= 12) return QPointF();
+
+    QPointF centerPt(width() / 2.0, height() / 2.0);
+    double minSide = qMin(width(), height());
+    double outerR  = minSide / 2.0 * 0.90;
+    Layout layout  = computeLayout(outerR);
+
+    double angleDeg = 270.0 + index * 30.0;
+    double angleRad = qDegreesToRadians(angleDeg);
+    double innerR = (index % 2 == 0) ? layout.farR : layout.nearR;
+
+    return QPointF(centerPt.x() + innerR * qCos(angleRad),
+                   centerPt.y() + innerR * qSin(angleRad));
+}
+
+void CircleDisplayWidget::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton && m_selectEnabled) {
+        int idx = hitTest(event->position());
+        emit itemClicked(idx);
+    }
+    QWidget::mousePressEvent(event);
 }
 
 // --- 顶部把手 ---
@@ -237,7 +301,6 @@ void CircleDisplayWidget::drawItems(QPainter &painter, const QPointF &center, co
     // 字体设置
     QFont textFont;
     textFont.setPointSizeF(qMax(8.0, smallR * 0.35));
-    painter.setFont(textFont);
 
     QFont labelFont;
     labelFont.setPointSizeF(qMax(7.0, smallR * 0.30));
@@ -259,7 +322,8 @@ void CircleDisplayWidget::drawItems(QPainter &painter, const QPointF &center, co
         painter.setBrush(m_items[i].fillColor);
         painter.drawEllipse(itemCenter, smallR, smallR);
 
-        // 画内部文字
+        // 画内部文字（每次都要重设字体，因为上一轮循环末尾切换成了 labelFont）
+        painter.setFont(textFont);
         painter.setPen(m_textColor);
         QFontMetrics fm(textFont);
         QRect textRect = fm.boundingRect(m_items[i].text);
