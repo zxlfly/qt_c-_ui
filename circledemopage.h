@@ -16,7 +16,7 @@ private slots:
     void onReset();
 
 private:
-    CircleDisplayWidget *m_circleWidget;
+    QList<CircleDisplayWidget *> m_widgets;  // 4个实例
 };
 
 #endif // CIRCLEDEMOPAGE_H

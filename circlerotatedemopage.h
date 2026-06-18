@@ -3,10 +3,12 @@
 
 #include <QWidget>
 #include <QPropertyAnimation>
+#include <QList>
 #include "circledisplaywidget.h"
 
 class QPushButton;
 class QLabel;
+class QGroupBox;
 
 class CircleRotateDemoPage : public QWidget
 {
@@ -19,16 +21,20 @@ private slots:
     void onRotateForward();
     void onRotateBackward();
     void onReset();
-    void onRotationFinished();
 
 private:
-    CircleDisplayWidget *m_circleWidget;
-    QPropertyAnimation   *m_animation = nullptr;
-    QLabel               *m_infoLabel = nullptr;
-    int                   m_currentStep = 0;  // 当前步数（0~11，对应倒三角指向的小管编号）
-    bool                  m_animating = false;
+    struct RotateState {
+        CircleDisplayWidget *widget = nullptr;
+        QPropertyAnimation  *anim   = nullptr;
+        QGroupBox           *group  = nullptr;
+        QLabel              *label  = nullptr;
+        int                  step   = 0;
+        bool                 animating = false;
+    };
 
-    void updateInfoLabel();
+    QList<RotateState> m_circles;  // 4个实例
+
+    void updateInfoLabel(int idx);
 };
 
 #endif // CIRCLEROTATEDEMOPAGE_H

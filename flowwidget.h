@@ -29,6 +29,7 @@ public:
 
 protected:
     void paintEvent(QPaintEvent *event) override;
+    QSize sizeHint() const override;
 
 private:
     FlowData m_data;

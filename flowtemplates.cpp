@@ -63,3 +63,61 @@ FlowData createTemplateB()
 
     return data;
 }
+
+FlowData createTemplateC()
+{
+    FlowData data;
+    data.defaultRadius = 0.04;
+
+    // 双分支并行流程
+    data.nodes = {
+        {"start",   "启动",  0.10, 0.50, 0.0, NodeState::Idle, LabelPosition::Top},
+        {"check",   "检测",  0.25, 0.50, 0.0, NodeState::Idle, LabelPosition::Top},
+        {"pass",    "合格",  0.50, 0.28, 0.0, NodeState::Idle, LabelPosition::Top},
+        {"fail",    "不合格", 0.50, 0.72, 0.0, NodeState::Idle, LabelPosition::Top},
+        {"report",  "报告",  0.75, 0.50, 0.0, NodeState::Idle, LabelPosition::Top},
+        {"end",     "完成",  0.90, 0.50, 0.0, NodeState::Idle, LabelPosition::Top},
+    };
+
+    data.edges = {
+        {"start",  "check"},
+        {"report", "end"},
+    };
+
+    data.branches = {
+        {"split1", "check",  {"pass", "fail"}, 0.0, false},
+        {"merge1", "report", {"pass", "fail"}, 0.0, true},
+    };
+
+    return data;
+}
+
+FlowData createTemplateD()
+{
+    FlowData data;
+    data.defaultRadius = 0.032;
+
+    // 7节点长线性流程
+    data.nodes = {
+        {"start",  "发起",  0.07, 0.50, 0.0, NodeState::Idle, LabelPosition::Top},
+        {"step1",  "填表",  0.22, 0.50, 0.0, NodeState::Idle, LabelPosition::Top},
+        {"step2",  "初审",  0.37, 0.50, 0.0, NodeState::Idle, LabelPosition::Top},
+        {"step3",  "复审",  0.52, 0.50, 0.0, NodeState::Idle, LabelPosition::Top},
+        {"step4",  "审批",  0.67, 0.50, 0.0, NodeState::Idle, LabelPosition::Top},
+        {"step5",  "归档",  0.82, 0.50, 0.0, NodeState::Idle, LabelPosition::Top},
+        {"end",    "结案",  0.95, 0.50, 0.0, NodeState::Idle, LabelPosition::Top},
+    };
+
+    data.edges = {
+        {"start", "step1"},
+        {"step1", "step2"},
+        {"step2", "step3"},
+        {"step3", "step4"},
+        {"step4", "step5"},
+        {"step5", "end"},
+    };
+
+    data.branches = {};
+
+    return data;
+}

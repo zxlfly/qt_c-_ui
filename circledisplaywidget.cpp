@@ -9,7 +9,10 @@
 CircleDisplayWidget::CircleDisplayWidget(QWidget *parent)
     : QWidget(parent)
 {
-    setMinimumSize(300, 300);
+    setMinimumSize(200, 200);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    setAttribute(Qt::WA_OpaquePaintEvent, true);
+    setAutoFillBackground(true);
     m_items.resize(12);
     for (int i = 0; i < 12; ++i) {
         m_items[i].text = "名称";
@@ -17,6 +20,11 @@ CircleDisplayWidget::CircleDisplayWidget(QWidget *parent)
 }
 
 // --- 公开 API ---
+
+QSize CircleDisplayWidget::sizeHint() const
+{
+    return QSize(400, 400);
+}
 
 void CircleDisplayWidget::setItemText(int index, const QString &text)
 {
@@ -98,6 +106,9 @@ void CircleDisplayWidget::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
+
+    // 填充背景
+    painter.fillRect(rect(), palette().window());
 
     QPointF center(width() / 2.0, height() / 2.0);
     double minSide = qMin(width(), height());

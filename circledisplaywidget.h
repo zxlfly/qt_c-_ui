@@ -59,6 +59,7 @@ protected:
     void paintEvent(QPaintEvent *) override;
     void resizeEvent(QResizeEvent *) override;
     void mousePressEvent(QMouseEvent *event) override;
+    QSize sizeHint() const override;
 
 private:
     struct ItemData {

@@ -9,10 +9,19 @@
 FlowWidget::FlowWidget(QWidget *parent)
     : QWidget(parent)
 {
-    setMinimumSize(400, 200);
+    setMinimumSize(200, 120);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    // 填充背景，避免控件"隐形"但拦截鼠标事件
+    setAttribute(Qt::WA_OpaquePaintEvent, true);
+    setAutoFillBackground(true);
 }
 
 // --- 公开 API ---
+
+QSize FlowWidget::sizeHint() const
+{
+    return QSize(600, 300);
+}
 
 void FlowWidget::setFlowData(const FlowData &data)
 {
@@ -80,6 +89,19 @@ void FlowWidget::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
+
+    // 填充背景（确保控件可见，不会"隐形"拦截事件）
+    painter.fillRect(rect(), palette().window());
+
+    // 无数据时画占位提示
+    if (m_data.nodes.isEmpty()) {
+        painter.setPen(QColor("#BDBDBD"));
+        QFont font;
+        font.setPointSize(10);
+        painter.setFont(font);
+        painter.drawText(rect(), Qt::AlignCenter, QStringLiteral("暂无流程数据"));
+        return;
+    }
 
     drawBranches(painter);
     drawEdges(painter);

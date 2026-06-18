@@ -1,9 +1,11 @@
 #include "circleselectdemopage.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
+#include <QGridLayout>
 #include <QLabel>
 #include <QFrame>
 #include <QListWidget>
+#include <QGroupBox>
 #include <QCheckBox>
 #include <QMouseEvent>
 #include <QApplication>
@@ -30,15 +32,14 @@ CircleSelectDemoPage::CircleSelectDemoPage(QWidget *parent)
     auto *mainLayout = new QVBoxLayout(this);
 
     // 标题
-    auto *title = new QLabel("环形管展示 - 点击选择", this);
+    auto *title = new QLabel("环形管点击选择（4实例）", this);
     title->setStyleSheet("font-size: 16px; font-weight: bold; color: #424242; padding: 8px 0;");
     mainLayout->addWidget(title);
 
-    // 提示
+    // 提示 + 开关
     auto *hint = new QLabel("点击小管子弹出选择列表，选择后更新管内文字", this);
     hint->setStyleSheet("color: #757575; font-size: 12px; padding-bottom: 4px;");
 
-    // 开关 + 提示 水平排列
     auto *topBar = new QHBoxLayout();
     auto *selectCheck = new QCheckBox("开启点击选择", this);
     selectCheck->setChecked(true);
@@ -48,10 +49,37 @@ CircleSelectDemoPage::CircleSelectDemoPage(QWidget *parent)
     topBar->addStretch();
     mainLayout->addLayout(topBar);
 
-    // CircleDisplayWidget
-    m_circleWidget = new CircleDisplayWidget(this);
-    m_circleWidget->setSelectEnabled(true);   // 默认开启
-    mainLayout->addWidget(m_circleWidget, 1);
+    // 2x2 网格放4个 CircleDisplayWidget
+    auto *grid = new QGridLayout();
+    grid->setSpacing(6);
+    mainLayout->addLayout(grid, 1);
+
+    const QStringList titles = {"管组 A", "管组 B", "管组 C", "管组 D"};
+    for (int i = 0; i < 4; ++i) {
+        auto *gb = new QGroupBox(titles[i], this);
+        auto *vlay = new QVBoxLayout(gb);
+        vlay->setContentsMargins(4, 4, 4, 4);
+
+        auto *cw = new CircleDisplayWidget(gb);
+        cw->setSelectEnabled(true);
+
+        // 初始文字
+        for (int j = 0; j < 12; ++j) {
+            cw->setItemText(j, s_options[j % s_options.size()]);
+        }
+        vlay->addWidget(cw);
+
+        CircleState cs;
+        cs.widget = cw;
+        cs.group  = gb;
+        m_circles.append(cs);
+
+        // 连接点击信号：用 lambda 捕获控件索引 i
+        connect(cw, &CircleDisplayWidget::itemClicked, this,
+                [this, i](int index) { onCircleItemClicked(index); });
+
+        grid->addWidget(gb, i / 2, i % 2);
+    }
 
     // 弹出列表（QFrame + QListWidget），初始隐藏
     m_popupFrame = new QFrame(this);
@@ -99,19 +127,16 @@ CircleSelectDemoPage::CircleSelectDemoPage(QWidget *parent)
     }
     popupLayout->addWidget(m_listWidget);
 
-    // 连接信号
-    connect(m_circleWidget, &CircleDisplayWidget::itemClicked,
-            this, &CircleSelectDemoPage::onCircleItemClicked);
-
     // 使用 lambda 连接，确保直接拿到点击的 item
     connect(m_listWidget, &QListWidget::itemClicked,
             this, [this](QListWidgetItem *item) {
-        if (m_currentIndex < 0 || !item) return;
-        int idx = m_currentIndex;          // 先保存，hidePopup 会重置
+        if (m_currentIndex < 0 || m_currentCircle < 0 || !item) return;
+        int itemIdx = m_currentIndex;
+        int circleIdx = m_currentCircle;
         QString text = item->text();
-        hidePopup();                        // 先关弹窗，避免遮挡重绘
-        m_circleWidget->setItemText(idx, text);
-        m_circleWidget->repaint();         // 强制立即重绘
+        hidePopup();                        // 先关弹窗
+        m_circles[circleIdx].widget->setItemText(itemIdx, text);
+        m_circles[circleIdx].widget->repaint();  // 强制重绘
     });
 
     // 全局事件过滤器：仅用于检测弹出框外点击关闭，绝不消费事件
@@ -119,7 +144,9 @@ CircleSelectDemoPage::CircleSelectDemoPage(QWidget *parent)
 
     // 开关联动
     connect(selectCheck, &QCheckBox::toggled, this, [this](bool checked) {
-        m_circleWidget->setSelectEnabled(checked);
+        for (const CircleState &cs : m_circles) {
+            cs.widget->setSelectEnabled(checked);
+        }
         if (!checked) hidePopup();
     });
 }
@@ -128,35 +155,45 @@ bool CircleSelectDemoPage::eventFilter(QObject *watched, QEvent *event)
 {
     if (m_popupFrame->isVisible() && event->type() == QEvent::MouseButtonPress) {
         auto *mouseEvent = static_cast<QMouseEvent *>(event);
-        // 用全局坐标判断点击是否在弹出框内部
         QPoint globalPos = mouseEvent->globalPosition().toPoint();
         QPoint popupLocal = m_popupFrame->mapFromGlobal(globalPos);
 
         if (!m_popupFrame->rect().contains(popupLocal)) {
-            // 点击在弹出框外部 → 关闭弹窗
             hidePopup();
         }
-        // 关键：始终返回 false，不消费事件，让事件正常传递到目标控件
     }
     return false;
 }
 
 void CircleSelectDemoPage::onCircleItemClicked(int index)
 {
-    if (index < 0) {
+    // 找到是哪个 CircleDisplayWidget 发出的信号
+    CircleDisplayWidget *sender = qobject_cast<CircleDisplayWidget *>(this->sender());
+    int circleIdx = -1;
+    for (int i = 0; i < m_circles.size(); ++i) {
+        if (m_circles[i].widget == sender) {
+            circleIdx = i;
+            break;
+        }
+    }
+
+    if (index < 0 || circleIdx < 0) {
         hidePopup();
         return;
     }
-    showPopup(index);
+    showPopup(circleIdx, index);
 }
 
-void CircleSelectDemoPage::showPopup(int index)
+void CircleSelectDemoPage::showPopup(int circleIdx, int itemIdx)
 {
-    m_currentIndex = index;
+    m_currentCircle = circleIdx;
+    m_currentIndex = itemIdx;
+
+    CircleDisplayWidget *cw = m_circles[circleIdx].widget;
 
     // 定位到小圆旁边
-    QPointF center = m_circleWidget->itemCenter(index);
-    QPoint popupPos = m_circleWidget->mapToParent(center.toPoint());
+    QPointF center = cw->itemCenter(itemIdx);
+    QPoint popupPos = cw->mapToParent(center.toPoint());
 
     // 先调整弹出框大小
     m_popupFrame->adjustSize();
@@ -164,17 +201,19 @@ void CircleSelectDemoPage::showPopup(int index)
     // 偏移到小圆右侧，避免遮挡
     popupPos += QPoint(30, -m_popupFrame->height() / 2);
 
+    // 转换到本页面坐标（因为小管可能在 GroupBox 内多层嵌套）
+    QPoint pagePos = cw->parentWidget()->mapToParent(popupPos);
+
     // 确保不超出父控件
     int maxX = width() - m_popupFrame->width() - 4;
     int maxY = height() - m_popupFrame->height() - 4;
-    popupPos.setX(qBound(4, popupPos.x(), maxX));
-    popupPos.setY(qBound(4, popupPos.y(), maxY));
+    pagePos.setX(qBound(4, pagePos.x(), maxX));
+    pagePos.setY(qBound(4, pagePos.y(), maxY));
 
-    m_popupFrame->move(popupPos);
+    m_popupFrame->move(pagePos);
     m_popupFrame->show();
     m_popupFrame->raise();
 
-    // 清空之前的选择
     m_listWidget->clearSelection();
     m_listWidget->setFocus();
 }
@@ -183,4 +222,5 @@ void CircleSelectDemoPage::hidePopup()
 {
     m_popupFrame->hide();
     m_currentIndex = -1;
+    m_currentCircle = -1;
 }

@@ -2,11 +2,13 @@
 #define CIRCLESELECTDEMOPAGE_H
 
 #include <QWidget>
+#include <QList>
 #include "circledisplaywidget.h"
 
 class QFrame;
 class QListWidget;
 class QListWidgetItem;
+class QGroupBox;
 
 class CircleSelectDemoPage : public QWidget
 {
@@ -22,12 +24,21 @@ private slots:
     void onCircleItemClicked(int index);
 
 private:
-    CircleDisplayWidget *m_circleWidget;
-    QFrame              *m_popupFrame = nullptr;
-    QListWidget         *m_listWidget = nullptr;
-    int                  m_currentIndex = -1;
+    // 每个环形管控件的状态
+    struct CircleState {
+        CircleDisplayWidget *widget = nullptr;
+        QGroupBox           *group  = nullptr;
+    };
 
-    void showPopup(int index);
+    QList<CircleState> m_circles;     // 4个实例
+
+    // 弹出列表（所有实例共用一个）
+    QFrame      *m_popupFrame  = nullptr;
+    QListWidget *m_listWidget  = nullptr;
+    int          m_currentIndex = -1;          // 当前点击的小管索引 (0~11)
+    int          m_currentCircle = -1;          // 当前操作的环形管控件索引 (0~3)
+
+    void showPopup(int circleIdx, int itemIdx);
     void hidePopup();
 
     static const QStringList s_options;
